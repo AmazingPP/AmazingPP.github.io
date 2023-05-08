@@ -316,7 +316,7 @@
           <i class="far fa-calendar-check"></i>
         </span>
         <span class="post-meta-item-text">更新于</span>
-        <time title="修改时间：2023-05-08 16:37:44" itemprop="dateModified" datetime="2023-05-08T16:37:44+08:00">2023-05-08</time>
+        <time title="修改时间：2023-05-08 16:39:09" itemprop="dateModified" datetime="2023-05-08T16:39:09+08:00">2023-05-08</time>
       </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -422,7 +422,7 @@
           <i class="far fa-calendar-check"></i>
         </span>
         <span class="post-meta-item-text">更新于</span>
-        <time title="修改时间：2023-05-08 16:37:44" itemprop="dateModified" datetime="2023-05-08T16:37:44+08:00">2023-05-08</time>
+        <time title="修改时间：2023-05-08 16:39:09" itemprop="dateModified" datetime="2023-05-08T16:39:09+08:00">2023-05-08</time>
       </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -516,7 +516,7 @@
           <i class="far fa-calendar-check"></i>
         </span>
         <span class="post-meta-item-text">更新于</span>
-        <time title="修改时间：2023-05-08 16:37:44" itemprop="dateModified" datetime="2023-05-08T16:37:44+08:00">2023-05-08</time>
+        <time title="修改时间：2023-05-08 16:39:09" itemprop="dateModified" datetime="2023-05-08T16:39:09+08:00">2023-05-08</time>
       </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -622,7 +622,7 @@
           <i class="far fa-calendar-check"></i>
         </span>
         <span class="post-meta-item-text">更新于</span>
-        <time title="修改时间：2023-05-08 16:37:44" itemprop="dateModified" datetime="2023-05-08T16:37:44+08:00">2023-05-08</time>
+        <time title="修改时间：2023-05-08 16:39:09" itemprop="dateModified" datetime="2023-05-08T16:39:09+08:00">2023-05-08</time>
       </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -715,7 +715,7 @@
           <i class="far fa-calendar-check"></i>
         </span>
         <span class="post-meta-item-text">更新于</span>
-        <time title="修改时间：2023-05-08 16:37:44" itemprop="dateModified" datetime="2023-05-08T16:37:44+08:00">2023-05-08</time>
+        <time title="修改时间：2023-05-08 16:39:09" itemprop="dateModified" datetime="2023-05-08T16:39:09+08:00">2023-05-08</time>
       </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -741,7 +741,7 @@
     <div class="post-body" itemprop="articleBody">
           <h1 id="前言">前言</h1>
 <p>众所周知，C/C++函数返回值会使用eax寄存器来传递，我们用以下代码验证一下</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">uint32_t</span> <span class="title">foo</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">auto</span> n = foo();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">uint32_t</span> <span class="title">foo</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">auto</span> n = <span class="built_in">foo</span>();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <figure class="highlight x86asm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">    auto n = foo()<span class="comment">;</span></span><br><span class="line">00F22A93  <span class="keyword">call</span>        foo (<span class="number">0F213E8h</span>)  </span><br><span class="line">00F22A98  <span class="keyword">mov</span>         <span class="built_in">dword</span> <span class="built_in">ptr</span> [n],<span class="built_in">eax</span>  // <span class="built_in">ebp</span>-<span class="number">4</span></span><br></pre></td></tr></table></figure>
 <p>可以看到，main函数调用完foo后，将eax的值传送到n中。证明了eax确实用于返回值传递</p>
 <p>但eax本身只有4字节，那么当返回值大于4字节时是如何传递的呢？</p>
@@ -809,7 +809,7 @@
           <i class="far fa-calendar-check"></i>
         </span>
         <span class="post-meta-item-text">更新于</span>
-        <time title="修改时间：2023-05-08 16:37:44" itemprop="dateModified" datetime="2023-05-08T16:37:44+08:00">2023-05-08</time>
+        <time title="修改时间：2023-05-08 16:39:09" itemprop="dateModified" datetime="2023-05-08T16:39:09+08:00">2023-05-08</time>
       </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -903,7 +903,7 @@
           <i class="far fa-calendar-check"></i>
         </span>
         <span class="post-meta-item-text">更新于</span>
-        <time title="修改时间：2023-05-08 16:37:44" itemprop="dateModified" datetime="2023-05-08T16:37:44+08:00">2023-05-08</time>
+        <time title="修改时间：2023-05-08 16:39:09" itemprop="dateModified" datetime="2023-05-08T16:39:09+08:00">2023-05-08</time>
       </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -995,7 +995,7 @@
           <i class="far fa-calendar-check"></i>
         </span>
         <span class="post-meta-item-text">更新于</span>
-        <time title="修改时间：2023-05-08 16:37:44" itemprop="dateModified" datetime="2023-05-08T16:37:44+08:00">2023-05-08</time>
+        <time title="修改时间：2023-05-08 16:39:09" itemprop="dateModified" datetime="2023-05-08T16:39:09+08:00">2023-05-08</time>
       </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -1087,7 +1087,7 @@
           <i class="far fa-calendar-check"></i>
         </span>
         <span class="post-meta-item-text">更新于</span>
-        <time title="修改时间：2023-05-08 16:37:44" itemprop="dateModified" datetime="2023-05-08T16:37:44+08:00">2023-05-08</time>
+        <time title="修改时间：2023-05-08 16:39:09" itemprop="dateModified" datetime="2023-05-08T16:39:09+08:00">2023-05-08</time>
       </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -1177,7 +1177,7 @@
           <i class="far fa-calendar-check"></i>
         </span>
         <span class="post-meta-item-text">更新于</span>
-        <time title="修改时间：2023-05-08 16:37:44" itemprop="dateModified" datetime="2023-05-08T16:37:44+08:00">2023-05-08</time>
+        <time title="修改时间：2023-05-08 16:39:09" itemprop="dateModified" datetime="2023-05-08T16:39:09+08:00">2023-05-08</time>
       </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
