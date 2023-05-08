@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.2.0">
+<meta name="baidu-site-verification" content="code-LTe5UmCY1L" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-mask.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-mask.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-mask.png">
+  <link rel="mask-icon" href="/images/safari-pinned-tab.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="y-axIzJicPcgAWNW_3qLZoyTpHO6bd5orQlb5q1Xl44">
+  <meta name="baidu-site-verification" content="code-LTe5UmCY1L">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="//unpkg.com/@fortawesome/fontawesome-free@5.15.1/css/all.min.css">
+  <link rel="stylesheet" href="//unpkg.com/animate.css@3.1.1/animate.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhaofupeng.com","root":"/","images":"/images","scheme":"Gemini","version":"8.1.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":true,"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}};
+  </script>
+<meta name="description" content="前言 最近忙了一些琐碎的事情，这两天又有闲功夫了，发现2021安全技术竞赛决赛赛题出来了，而且比赛都结束了.... 虽然赛事已经结束，但题目还是能做。既然闲下来就继续做做，写个writeup吧。 PC决赛赛题下载">
+<meta property="og:type" content="article">
+<meta property="og:title" content="2021腾讯游戏安全技术竞赛 决赛PC客户端writeup">
+<meta property="og:url" content="https://zhaofupeng.com/2021/04/22/gslab-ctf-finals-pc-writeup/index.html">
+<meta property="og:site_name" content="PP的秘密基地">
+<meta property="og:description" content="前言 最近忙了一些琐碎的事情，这两天又有闲功夫了，发现2021安全技术竞赛决赛赛题出来了，而且比赛都结束了.... 虽然赛事已经结束，但题目还是能做。既然闲下来就继续做做，写个writeup吧。 PC决赛赛题下载">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhaofupeng.com/2021/04/22/gslab-ctf-finals-pc-writeup/step1.png">
+<meta property="og:image" content="https://zhaofupeng.com/2021/04/22/gslab-ctf-finals-pc-writeup/step2.png">
+<meta property="og:image" content="https://zhaofupeng.com/2021/04/22/gslab-ctf-finals-pc-writeup/step3.png">
+<meta property="og:image" content="https://zhaofupeng.com/2021/04/22/gslab-ctf-finals-pc-writeup/step4.png">
+<meta property="og:image" content="https://zhaofupeng.com/2021/04/22/gslab-ctf-finals-pc-writeup/step4-1.png">
+<meta property="og:image" content="https://zhaofupeng.com/2021/04/22/gslab-ctf-finals-pc-writeup/decrypt.png">
+<meta property="og:image" content="https://zhaofupeng.com/2021/04/22/gslab-ctf-finals-pc-writeup/flag.png">
+<meta property="og:image" content="https://zhaofupeng.com/2021/04/22/gslab-ctf-finals-pc-writeup/feature.png">
+<meta property="og:image" content="https://zhaofupeng.com/2021/04/22/gslab-ctf-finals-pc-writeup/base-ptr.png">
+<meta property="og:image" content="https://zhaofupeng.com/2021/04/22/gslab-ctf-finals-pc-writeup/hook.png">
+<meta property="og:image" content="https://zhaofupeng.com/2021/04/22/gslab-ctf-finals-pc-writeup/player-controller.png">
+<meta property="og:image" content="https://zhaofupeng.com/2021/04/22/gslab-ctf-finals-pc-writeup/foreach-objs.png">
+<meta property="og:image" content="https://zhaofupeng.com/2021/04/22/gslab-ctf-finals-pc-writeup/get-target.png">
+<meta property="og:image" content="https://zhaofupeng.com/2021/04/22/gslab-ctf-finals-pc-writeup/get-pos.png">
+<meta property="og:image" content="https://zhaofupeng.com/2021/04/22/gslab-ctf-finals-pc-writeup/end.png">
+<meta property="article:published_time" content="2021-04-22T07:26:15.000Z">
+<meta property="article:modified_time" content="2023-05-08T06:14:39.142Z">
+<meta property="article:author" content="mAsk°">
+<meta property="article:tag" content="逆向">
+<meta property="article:tag" content="IDA Pro">
+<meta property="article:tag" content="x64dbg">
+<meta property="article:tag" content="CTF">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhaofupeng.com/2021/04/22/gslab-ctf-finals-pc-writeup/step1.png">
+
+
+<link rel="canonical" href="https://zhaofupeng.com/2021/04/22/gslab-ctf-finals-pc-writeup/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+<title>2021腾讯游戏安全技术竞赛 决赛PC客户端writeup | PP的秘密基地</title>
+  
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?929e85cdb04c9d8402e3c1ac0e304ac7";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://unpkg.com/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="/css/style.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">PP的秘密基地</h1>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">纸上得来终觉浅,绝知此事要躬行.</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <section class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%B5%9B%E9%A2%98"><span class="nav-number">2.</span> <span class="nav-text">赛题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%B4%E6%98%8E"><span class="nav-number">2.0.1.</span> <span class="nav-text">说明：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%AE%E6%A0%87"><span class="nav-number">2.0.2.</span> <span class="nav-text">目标：</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%88%86%E6%9E%90hack.exe"><span class="nav-number">3.</span> <span class="nav-text">分析hack.exe</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E8%BF%90%E8%A1%8C%E6%B5%81%E7%A8%8B"><span class="nav-number">3.1.</span> <span class="nav-text">程序运行流程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80.-%E7%A8%8B%E5%BA%8F%E5%85%88%E8%A7%A3%E5%AF%86%E4%BA%86%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%BE%97%E5%88%B0%E6%96%87%E4%BB%B6%E5%90%8Dhack.dat%E5%B9%B6%E8%AF%BB%E5%8F%96%E4%BA%86%E8%BF%99%E4%B8%AA%E6%96%87%E4%BB%B6"><span class="nav-number">3.1.1.</span> <span class="nav-text">一. 程序先解密了字符串，得到文件名hack.dat，并读取了这个文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%8C.-%E7%A8%8B%E5%BA%8F%E4%BB%8Ehack.dat%E9%87%8C%E8%A7%A3%E5%AF%86%E5%87%BA%E6%B8%B8%E6%88%8F%E8%BF%9B%E7%A8%8B%E5%90%8D%E5%B9%B6%E6%89%93%E5%BC%80%E6%B8%B8%E6%88%8F%E8%BF%9B%E7%A8%8B"><span class="nav-number">3.1.2.</span> <span class="nav-text">二. 程序从hack.dat里解密出游戏进程名，并打开游戏进程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%89.-%E7%A8%8B%E5%BA%8F%E5%BC%80%E5%A7%8B%E6%9E%84%E9%80%A0flag%E5%B9%B6%E6%A3%80%E6%9F%A5hack.dat%E7%9A%84%E5%86%85%E5%AE%B9"><span class="nav-number">3.1.3.</span> <span class="nav-text">三. 程序开始构造flag，并检查hack.dat的内容</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9B%9B.-%E6%B3%A8%E5%85%A5dll"><span class="nav-number">3.1.4.</span> <span class="nav-text">四. 注入DLL</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#decrypt%E5%87%BD%E6%95%B0%E5%88%86%E6%9E%90"><span class="nav-number">3.2.</span> <span class="nav-text">decrypt函数分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#dump%E5%A4%96%E6%8C%82dll"><span class="nav-number">3.3.</span> <span class="nav-text">Dump外挂DLL</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%8F%E6%80%BB%E7%BB%93"><span class="nav-number">3.4.</span> <span class="nav-text">小总结</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%88%86%E6%9E%90dump.dll"><span class="nav-number">4.</span> <span class="nav-text">分析dump.dll</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E8%BF%90%E8%A1%8C%E6%B5%81%E7%A8%8B-1"><span class="nav-number">4.1.</span> <span class="nav-text">程序运行流程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80.-%E7%A8%8B%E5%BA%8F%E5%85%88%E8%8E%B7%E5%8F%96%E6%B8%B8%E6%88%8F%E4%B8%BB%E6%A8%A1%E5%9D%97%E5%88%9D%E5%A7%8B%E5%8C%96%E5%90%84%E7%A7%8D%E5%85%A8%E5%B1%80%E5%8F%98%E9%87%8F"><span class="nav-number">4.1.1.</span> <span class="nav-text">一. 程序先获取游戏主模块，初始化各种全局变量</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C.-%E7%84%B6%E5%90%8Ehooking%E6%B8%B8%E6%88%8Ftick%E5%87%BD%E6%95%B0%E5%B0%86%E8%87%AA%E7%9E%84%E5%8A%9F%E8%83%BD%E5%AE%9E%E7%8E%B0%E5%9C%A8hook%E5%87%BD%E6%95%B0%E9%87%8C"><span class="nav-number">4.2.</span> <span class="nav-text">二. 然后Hooking游戏tick函数，将自瞄功能实现在Hook函数里</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89.-%E6%9C%80%E5%90%8E%E5%AE%9E%E7%8E%B0%E8%87%AA%E7%9E%84%E5%8A%9F%E8%83%BD"><span class="nav-number">4.3.</span> <span class="nav-text">三. 最后实现自瞄功能</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%8F%E6%80%BB%E7%BB%93-1"><span class="nav-number">4.4.</span> <span class="nav-text">小总结</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E4%B8%8Ehack.exe%E5%A4%96%E6%8C%82%E5%8A%9F%E8%83%BD%E7%9B%B8%E5%90%8C%E7%9A%84%E7%A8%8B%E5%BA%8F"><span class="nav-number">5.</span> <span class="nav-text">实现与hack.exe外挂功能相同的程序</span></a></li></ol></div>
+        </section>
+        <!--/noindex-->
+
+        <section class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="mAsk°"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">mAsk°</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">19</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">37</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/AmazingPP" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;AmazingPP" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:1620535041@qq.com" title="E-Mail → mailto:1620535041@qq.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license site-overview-item animated" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+  <div class="links-of-blogroll site-overview-item animated">
+    <div class="links-of-blogroll-title"><i class="fa fa-globe fa-fw"></i>
+      友情链接
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="https://www.echidna-sxh.com/" title="https:&#x2F;&#x2F;www.echidna-sxh.com&#x2F;" rel="noopener" target="_blank">Echidna</a>
+        </li>
+        <li class="links-of-blogroll-item">
+          <a href="https://www.cnblogs.com/chenwan1218/" title="https:&#x2F;&#x2F;www.cnblogs.com&#x2F;chenwan1218&#x2F;" rel="noopener" target="_blank">吃饭睡觉打痘痘</a>
+        </li>
+    </ul>
+  </div>
+
+        </section>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/AmazingPP" class="github-corner" title="在GitHub上关注我" aria-label="在GitHub上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhaofupeng.com/2021/04/22/gslab-ctf-finals-pc-writeup/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="mAsk°">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="PP的秘密基地">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          2021腾讯游戏安全技术竞赛 决赛PC客户端writeup
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2021-04-22 15:26:15" itemprop="dateCreated datePublished" datetime="2021-04-22T15:26:15+08:00">2021-04-22</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2023-05-08 14:14:39" itemprop="dateModified" datetime="2023-05-08T14:14:39+08:00">2023-05-08</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%80%86%E5%90%91/" itemprop="url" rel="index"><span itemprop="name">逆向</span></a>
+        </span>
+    </span>
+
+  
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2021/04/22/gslab-ctf-finals-pc-writeup/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2021/04/22/gslab-ctf-finals-pc-writeup/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h1 id="前言">前言</h1>
+<p>最近忙了一些琐碎的事情，这两天又有闲功夫了，发现<a target="_blank" rel="noopener" href="https://gslab.qq.com/html/competition/2021/index.htm">2021安全技术竞赛</a>决赛赛题出来了，而且比赛都结束了....</p>
+<p>虽然赛事已经结束，但题目还是能做。既然闲下来就继续做做，写个writeup吧。</p>
+<p><a target="_blank" rel="noopener" href="https://gslab.qq.com/html/competition/2021/doc/PC%E5%AE%A2%E6%88%B7%E7%AB%AF%E6%96%B9%E5%90%91%E5%86%B3%E8%B5%9B%E8%B5%9B%E9%A2%98.zip">PC决赛赛题下载</a></p>
+<a id="more"></a>
+<h1 id="赛题">赛题</h1>
+<h3 id="说明">说明：</h3>
+<ol type="1">
+<li>shootgame是一个游戏，hack.exe是游戏shootergame的一个外挂程序。</li>
+<li>运行shootgame游戏，运行hack.exe，成功执行外挂功能并分析外挂实现过程。</li>
+</ol>
+<h3 id="目标">目标：</h3>
+<ol type="1">
+<li>成功执行hack功能，给出外挂执行成功的flag</li>
+<li>实现与hack.exe外挂功能相同，但原理不同的程序</li>
+</ol>
+<p>很有意思的游戏外挂方向，算是我比较擅长的领域</p>
+<p>先打开游戏试试，跑一下hack.exe，发现一闪而过，并没有执行外挂功能 看了一下无壳，所以直接拖入IDA分析</p>
+<h1 id="分析hack.exe">分析hack.exe</h1>
+<p>main函数里就是整个外挂程序的执行流程，先大体看一下流程</p>
+<h2 id="程序运行流程">程序运行流程</h2>
+<h3 id="一.-程序先解密了字符串得到文件名hack.dat并读取了这个文件">一. 程序先解密了字符串，得到文件名hack.dat，并读取了这个文件</h3>
+<img data-src="/2021/04/22/gslab-ctf-finals-pc-writeup/step1.png" class="">
+<figure class="highlight python"><figcaption><span>FileName解密</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">data = [<span class="number">0x06</span>, <span class="number">0x0E</span>, <span class="number">0x13</span>, <span class="number">0x1A</span>, <span class="number">0x5C</span>, <span class="number">0x17</span>, <span class="number">0x15</span>, <span class="number">0x1</span>]</span><br><span class="line"></span><br><span class="line">file_name = <span class="string">&#x27;&#x27;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(data)):</span><br><span class="line">    file_name += <span class="built_in">chr</span>(data[i] ^ i + <span class="number">110</span>)</span><br><span class="line"></span><br><span class="line">print(file_name)</span><br></pre></td></tr></table></figure>
+<p>这也解释了，直接打开外挂为什么会一闪而过</p>
+<h3 id="二.-程序从hack.dat里解密出游戏进程名并打开游戏进程">二. 程序从hack.dat里解密出游戏进程名，并打开游戏进程</h3>
+<img data-src="/2021/04/22/gslab-ctf-finals-pc-writeup/step2.png" class="">
+<p>decrypt函数解密出hack.dat的明文，通过下标构造出进程名，然后用<code>CreateToolhelp32Snapshot</code>和<code>Process32First</code>遍历进程，找到后打开进程。</p>
+<p>代码中有一个for循环目前不太清楚是干嘛的、decrypt函数的解密算法也先放放。先继续往下看</p>
+<h3 id="三.-程序开始构造flag并检查hack.dat的内容">三. 程序开始构造flag，并检查hack.dat的内容</h3>
+<img data-src="/2021/04/22/gslab-ctf-finals-pc-writeup/step3.png" class="">
+<ol type="1">
+<li>第一个循环用于构造flag，脚本如下（与解密FileName的算法一致）</li>
+</ol>
+<figure class="highlight python"><figcaption><span>flag构造</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">data = [<span class="number">92</span>, <span class="number">61</span>, <span class="number">35</span>, <span class="number">35</span>, <span class="number">26</span>, <span class="number">1</span>, <span class="number">27</span>, <span class="number">19</span>, <span class="number">25</span>, <span class="number">32</span>, </span><br><span class="line"><span class="number">12</span>, <span class="number">53</span>, <span class="number">31</span>, <span class="number">55</span>, <span class="number">14</span>, <span class="number">55</span>, <span class="number">61</span>, <span class="number">44</span>, <span class="number">236</span>, <span class="number">213</span>, <span class="number">235</span>, </span><br><span class="line"><span class="number">241</span>, <span class="number">225</span>, <span class="number">255</span>, <span class="number">232</span>, <span class="number">245</span>, <span class="number">252</span>, <span class="number">241</span>, <span class="number">164</span>, <span class="number">228</span>, </span><br><span class="line"><span class="number">233</span>, <span class="number">193</span>, <span class="number">246</span>, <span class="number">250</span>, <span class="number">245</span>, <span class="number">249</span>, <span class="number">235</span>, <span class="number">234</span>, <span class="number">213</span>, </span><br><span class="line"><span class="number">226</span>, <span class="number">244</span>, <span class="number">231</span>, <span class="number">219</span>, <span class="number">214</span>, <span class="number">192</span>, <span class="number">234</span>, <span class="number">172</span>, <span class="number">233</span>, </span><br><span class="line"><span class="number">237</span>, <span class="number">204</span>, <span class="number">151</span>, <span class="number">236</span>, <span class="number">248</span>, <span class="number">218</span>, <span class="number">242</span>, <span class="number">193</span>, <span class="number">233</span>, </span><br><span class="line"><span class="number">242</span>, <span class="number">199</span>, <span class="number">236</span>, <span class="number">146</span>]</span><br><span class="line"></span><br><span class="line">flag = <span class="string">&#x27;&#x27;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(data)):</span><br><span class="line">    flag += <span class="built_in">chr</span>(data[i] ^ i + <span class="number">110</span>)</span><br><span class="line">    </span><br><span class="line">print(flag)</span><br></pre></td></tr></table></figure>
+<ol start="2" type="1">
+<li>第二个循环用于检查flag与hack.dat明文是否一致</li>
+<li>如果一致，就解密出<code>flag%s</code>（此处省略解密脚本，与解密FileName的算法一致），调用<code>printf</code>输出flag</li>
+</ol>
+<h3 id="四.-注入dll">四. 注入DLL</h3>
+<img data-src="/2021/04/22/gslab-ctf-finals-pc-writeup/step4.png" class="">
+<ol type="1">
+<li>解密DLL数据</li>
+<li>远程申请内存，用于放DLL</li>
+<li>解密ntdll.dll，以及各种DLL注入需要用到的函数（解密算法还是和上文一样，函数很多，不一一展示了）</li>
+</ol>
+<img data-src="/2021/04/22/gslab-ctf-finals-pc-writeup/step4-1.png" class="">
+<ol start="4" type="1">
+<li>使用<code>WriteProcessMemory</code>远程写入DLL内容、执行dll的执行器</li>
+</ol>
+<p>到这里，就能解释上文步骤二中的for是用来干嘛的了，是用来计算dll执行器的shellcode的长度</p>
+<ol start="5" type="1">
+<li>使用<code>CreateRemoteThreadEx</code>创建远程线程执行DLL，实现外挂功能</li>
+</ol>
+<h2 id="decrypt函数分析">decrypt函数分析</h2>
+<p>hack.exe中有两处调用了decrypt函数，分别是: 1. hack.dat文件的解密 2. DLL数据的解密</p>
+<p>由于上文已经知道了hack.dat解密出来的明文会与flag做对比。所以我们只需要分析decrypt函数的加密算法就可以得到hack.dat文件，也就能正常启动外挂了，顺便也可以dump出DLL文件</p>
+<img data-src="/2021/04/22/gslab-ctf-finals-pc-writeup/decrypt.png" class="">
+<p>decrypt函数是经过SSE指令集优化后的解密函数。</p>
+<p>利用SSE指令集，可以实现一个CPU指令操作16byte的数据，所以此函数SSE部分每次循环解密64byte的数据。 当解密到不足64byte时候（或本身就不足64byte），就使用常规，一byte一byte的解密 解密算法如图已经分析的很清楚了，下面上解密脚本，将flag反向输出成hack.dat</p>
+<figure class="highlight python"><figcaption><span>输出hack.dat</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">flag = <span class="string">&#x27;2RSRhrofoWtLeLrJCSlTireznrtx.oeLxuehyyAwbpCOZq0tsS7MZyVdOUoE8&#x27;</span></span><br><span class="line"></span><br><span class="line">data = [<span class="built_in">ord</span>(c) <span class="keyword">for</span> c <span class="keyword">in</span> flag]</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(data)):</span><br><span class="line">    data[i] = (data[i] + <span class="number">0x13</span>) ^ <span class="number">0x3F</span></span><br><span class="line">    </span><br><span class="line">fp = <span class="built_in">open</span>(<span class="string">&quot;hack.dat&quot;</span>, <span class="string">&#x27;wb&#x27;</span>)</span><br><span class="line">fp.write(<span class="built_in">bytes</span>(data))</span><br><span class="line">fp.close()</span><br></pre></td></tr></table></figure>
+<p>把输出的hack.dat放在hack.exe目录下，运行hack.exe</p>
+<img data-src="/2021/04/22/gslab-ctf-finals-pc-writeup/flag.png" class="">
+<p>成功输出flag</p>
+<img data-src="/2021/04/22/gslab-ctf-finals-pc-writeup/feature.png" class="">
+<p>成功执行外挂功能，试了一下，鼠标右键可以自瞄</p>
+<h2 id="dump外挂dll">Dump外挂DLL</h2>
+<p>由于已经搞懂了decrypt函数的算法，将DLL给dump出来就很简单了，既可以动态调试、也可以静态的使用IDAPython脚本解密后输出</p>
+<p>我这次使用脚本</p>
+<figure class="highlight python"><figcaption><span>dump DLL</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">start_addr = <span class="number">0x14001DA40</span></span><br><span class="line"><span class="built_in">len</span> = <span class="number">0xFA00</span></span><br><span class="line">data = ida_bytes.get_bytes(start_addr, <span class="built_in">len</span>)</span><br><span class="line">dll = []</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>):</span><br><span class="line">    dll.append((data[i] ^ <span class="number">0x3F</span>) - <span class="number">0x13</span> &amp; <span class="number">0xFF</span>)</span><br><span class="line"></span><br><span class="line">fp = <span class="built_in">open</span>(<span class="string">&quot;D:\\dump.dll&quot;</span>, <span class="string">&#x27;wb&#x27;</span>)</span><br><span class="line">fp.write(<span class="built_in">bytes</span>(dll))</span><br><span class="line">fp.close()</span><br></pre></td></tr></table></figure>
+<h2 id="小总结">小总结</h2>
+<p>dump出来后，下面就可以分析外挂功能的具体实现</p>
+<h1 id="分析dump.dll">分析dump.dll</h1>
+<p>无壳，直接拖入IDA分析</p>
+<h2 id="程序运行流程-1">程序运行流程</h2>
+<p>DllMain创建了一个线程，线程里放着主流程</p>
+<h3 id="一.-程序先获取游戏主模块初始化各种全局变量">一. 程序先获取游戏主模块，初始化各种全局变量</h3>
+<img data-src="/2021/04/22/gslab-ctf-finals-pc-writeup/base-ptr.png" class="">
+<p>根据主模块+基址偏移，获得World指针、三维xyz转屏幕xy的函数地址、以及游戏tick函数地址等等</p>
+<h2 id="二.-然后hooking游戏tick函数将自瞄功能实现在hook函数里">二. 然后Hooking游戏tick函数，将自瞄功能实现在Hook函数里</h2>
+<p>64位inline Hook，这里应该用了某Hook库，比较复杂。原理是修改原函数入口，JMP到Hook函数里，也实现了蹦床，这里就不具体分析了，看一下Hook修改原函数入口的核心代码就行，如下图</p>
+<img data-src="/2021/04/22/gslab-ctf-finals-pc-writeup/hook.png" class="">
+<h2 id="三.-最后实现自瞄功能">三. 最后实现自瞄功能</h2>
+<p>这里是本DLL的重点，自瞄功能的实现又分为以下几个步骤</p>
+<ol type="1">
+<li>根据基址偏移获取<code>player_controller</code>对象</li>
+</ol>
+<img data-src="/2021/04/22/gslab-ctf-finals-pc-writeup/player-controller.png" class="">
+<ol start="2" type="1">
+<li>判断鼠标右键是否按下，如果按下就调用<code>get_target</code>函数尝试匹配一个敌人</li>
+</ol>
+<p><code>get_target</code>函数分析如下</p>
+<img data-src="/2021/04/22/gslab-ctf-finals-pc-writeup/foreach-objs.png" class="">
+<p>遍历对象数组，并排除自己。获取每个对象名字，并排除物品、武器等对象</p>
+<img data-src="/2021/04/22/gslab-ctf-finals-pc-writeup/get-target.png" class="">
+<p>计算每个敌人与准心的距离，取距离准心最近的一个敌人返回</p>
+<ol start="3" type="1">
+<li>获取自己和敌人的坐标</li>
+</ol>
+<img data-src="/2021/04/22/gslab-ctf-finals-pc-writeup/get-pos.png" class="">
+<ol start="4" type="1">
+<li>计算相对距离，求俯仰角和偏航角，然后将数据写入到玩家Carm里，实现自瞄</li>
+</ol>
+<img data-src="/2021/04/22/gslab-ctf-finals-pc-writeup/end.png" class="">
+<h2 id="小总结-1">小总结</h2>
+<p>自此大概就明白了此DLL是如何实现自瞄的了，属于传统的内部攻击</p>
+<h1 id="实现与hack.exe外挂功能相同的程序">实现与hack.exe外挂功能相同的程序</h1>
+<p>等有时间了再写...</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>mAsk°
+  </li>
+  <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="https://zhaofupeng.com/2021/04/22/gslab-ctf-finals-pc-writeup/" title="2021腾讯游戏安全技术竞赛 决赛PC客户端writeup">https://zhaofupeng.com/2021/04/22/gslab-ctf-finals-pc-writeup/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/%E9%80%86%E5%90%91/" rel="tag"># 逆向</a>
+              <a href="/tags/IDA-Pro/" rel="tag"># IDA Pro</a>
+              <a href="/tags/x64dbg/" rel="tag"># x64dbg</a>
+              <a href="/tags/CTF/" rel="tag"># CTF</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/04/06/gslab-ctf-preliminaries-pc-writeup/" rel="prev" title="2021腾讯游戏安全技术竞赛 初赛PC客户端writeup">
+                  <i class="fa fa-chevron-left"></i> 2021腾讯游戏安全技术竞赛 初赛PC客户端writeup
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/05/28/veh-hook/" rel="next" title="向量化异常处理（VEH） Hook">
+                  向量化异常处理（VEH） Hook <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+<script>
+// remove Valine useless Elements
+window.onload = function(){
+  document.getElementsByClassName('vempty')[0].remove();
+  document.getElementsByClassName('vpower txt-right')[0].remove();
+}
+</script>
+
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank">苏ICP备20028272号-1</a>
+  </div>
+
+<div class="copyright">
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">mAsk°</span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="//unpkg.com/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="//unpkg.com/medium-zoom@1.0.6/dist/medium-zoom.min.js"></script>
+  <script src="//unpkg.com/lozad@1.16.0/dist/lozad.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  
+  <script>
+    (function(){
+      var bp = document.createElement('script');
+      var curProtocol = window.location.protocol.split(':')[0];
+      bp.src = (curProtocol === 'https') ? 'https://zz.bdstatic.com/linksubmit/push.js' : 'http://push.zhanzhang.baidu.com/push.js';
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(bp, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+  
+
+
+<script>
+NexT.utils.loadComments('#valine-comments', () => {
+  NexT.utils.getScript('//unpkg.com/valine@1.4.14/dist/Valine.min.js', () => {
+    new Valine(Object.assign({"enable":true,"appId":"0JXGpsLGBmQPLUT8YFuGIQtw-MdYXbMMI","appKey":"EBROXBRjuLRHB0N4N0E2rdzQ","placeholder":"欢迎畅所欲言~ (支持Markdown语法)","avatar":"mm","meta":["nick","mail"],"pageSize":10,"language":"zh-cn","visitor":false,"comment_count":false}, {
+      el: '#valine-comments',
+      path: "/2021/04/22/gslab-ctf-finals-pc-writeup/",
+      serverURLs: "https://0jxgpslg.api.lncldglobal.com"
+    }));
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

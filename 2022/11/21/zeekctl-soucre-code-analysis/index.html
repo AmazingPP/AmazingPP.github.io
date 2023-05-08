@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.2.0">
+<meta name="baidu-site-verification" content="code-LTe5UmCY1L" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-mask.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-mask.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-mask.png">
+  <link rel="mask-icon" href="/images/safari-pinned-tab.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="y-axIzJicPcgAWNW_3qLZoyTpHO6bd5orQlb5q1Xl44">
+  <meta name="baidu-site-verification" content="code-LTe5UmCY1L">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="//unpkg.com/@fortawesome/fontawesome-free@5.15.1/css/all.min.css">
+  <link rel="stylesheet" href="//unpkg.com/animate.css@3.1.1/animate.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhaofupeng.com","root":"/","images":"/images","scheme":"Gemini","version":"8.1.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":true,"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}};
+  </script>
+<meta name="description" content="deploy流程 一. check  创建&amp;#123;prefix&amp;#125;&#x2F;spool&#x2F;tmp&#x2F;check-config-XXXXX目录 将install命令应生成的zeek脚本放入临时目录 运行check-config脚本,启动所有node（不收包，跑完zeek脚本后正常退出） 检查node的exitcode是否为0  二. install  删除以前安装的策略文件以避免混淆 在&amp;#123;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ZeekCtl源码分析">
+<meta property="og:url" content="https://zhaofupeng.com/2022/11/21/zeekctl-soucre-code-analysis/index.html">
+<meta property="og:site_name" content="PP的秘密基地">
+<meta property="og:description" content="deploy流程 一. check  创建&amp;#123;prefix&amp;#125;&#x2F;spool&#x2F;tmp&#x2F;check-config-XXXXX目录 将install命令应生成的zeek脚本放入临时目录 运行check-config脚本,启动所有node（不收包，跑完zeek脚本后正常退出） 检查node的exitcode是否为0  二. install  删除以前安装的策略文件以避免混淆 在&amp;#123;">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhaofupeng.com/2022/11/21/zeekctl-soucre-code-analysis/cluster-layout.png">
+<meta property="article:published_time" content="2022-11-21T03:00:42.000Z">
+<meta property="article:modified_time" content="2023-05-08T06:14:39.158Z">
+<meta property="article:author" content="mAsk°">
+<meta property="article:tag" content="源码分析">
+<meta property="article:tag" content="Zeek">
+<meta property="article:tag" content="IDS">
+<meta property="article:tag" content="网络安全">
+<meta property="article:tag" content="Python">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhaofupeng.com/2022/11/21/zeekctl-soucre-code-analysis/cluster-layout.png">
+
+
+<link rel="canonical" href="https://zhaofupeng.com/2022/11/21/zeekctl-soucre-code-analysis/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+<title>ZeekCtl源码分析 | PP的秘密基地</title>
+  
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?929e85cdb04c9d8402e3c1ac0e304ac7";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://unpkg.com/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="/css/style.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">PP的秘密基地</h1>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">纸上得来终觉浅,绝知此事要躬行.</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <section class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#deploy%E6%B5%81%E7%A8%8B"><span class="nav-number">1.</span> <span class="nav-text">deploy流程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80.-check"><span class="nav-number">1.1.</span> <span class="nav-text">一. check</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C.-install"><span class="nav-number">1.2.</span> <span class="nav-text">二. install</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89.-stop"><span class="nav-number">1.3.</span> <span class="nav-text">三. stop</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B.-start"><span class="nav-number">1.4.</span> <span class="nav-text">四. start</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#q-a"><span class="nav-number">1.5.</span> <span class="nav-text">Q &amp; A</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#netstats%E6%B5%81%E7%A8%8B"><span class="nav-number">2.</span> <span class="nav-text">netstats流程</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%9A%E4%B8%AAzeekctl%E4%B9%8B%E9%97%B4%E5%A6%82%E4%BD%95%E7%AB%9E%E4%BA%89%E8%B5%84%E6%BA%90"><span class="nav-number">3.</span> <span class="nav-text">多个zeekctl之间如何竞争资源？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E5%AE%9E%E7%8E%B0%E7%9A%84%E5%A4%9A%E8%BF%9B%E7%A8%8B%E9%94%81"><span class="nav-number">3.1.</span> <span class="nav-text">文件实现的多进程锁</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8A%E9%94%81%E6%B5%81%E7%A8%8B"><span class="nav-number">3.2.</span> <span class="nav-text">上锁流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8A%E9%94%81%E5%A4%B1%E8%B4%A5%E5%90%8E%E7%9A%84%E6%B5%81%E7%A8%8B"><span class="nav-number">3.3.</span> <span class="nav-text">上锁失败后的流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E9%94%81%E6%B5%81%E7%A8%8B"><span class="nav-number">3.4.</span> <span class="nav-text">解锁流程</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#deploy%E5%90%8Ezeek%E9%9B%86%E7%BE%A4%E5%A6%82%E4%BD%95%E5%BB%BA%E7%AB%8B"><span class="nav-number">4.</span> <span class="nav-text">deploy后，Zeek集群如何建立？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#zeek%E9%9B%86%E7%BE%A4%E7%9A%84%E5%B8%83%E5%B1%80"><span class="nav-number">5.</span> <span class="nav-text">Zeek集群的布局</span></a></li></ol></div>
+        </section>
+        <!--/noindex-->
+
+        <section class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="mAsk°"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">mAsk°</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">19</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">37</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/AmazingPP" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;AmazingPP" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:1620535041@qq.com" title="E-Mail → mailto:1620535041@qq.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license site-overview-item animated" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+  <div class="links-of-blogroll site-overview-item animated">
+    <div class="links-of-blogroll-title"><i class="fa fa-globe fa-fw"></i>
+      友情链接
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="https://www.echidna-sxh.com/" title="https:&#x2F;&#x2F;www.echidna-sxh.com&#x2F;" rel="noopener" target="_blank">Echidna</a>
+        </li>
+        <li class="links-of-blogroll-item">
+          <a href="https://www.cnblogs.com/chenwan1218/" title="https:&#x2F;&#x2F;www.cnblogs.com&#x2F;chenwan1218&#x2F;" rel="noopener" target="_blank">吃饭睡觉打痘痘</a>
+        </li>
+    </ul>
+  </div>
+
+        </section>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/AmazingPP" class="github-corner" title="在GitHub上关注我" aria-label="在GitHub上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhaofupeng.com/2022/11/21/zeekctl-soucre-code-analysis/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="mAsk°">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="PP的秘密基地">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          ZeekCtl源码分析
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2022-11-21 11:00:42" itemprop="dateCreated datePublished" datetime="2022-11-21T11:00:42+08:00">2022-11-21</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2023-05-08 14:14:39" itemprop="dateModified" datetime="2023-05-08T14:14:39+08:00">2023-05-08</time>
+      </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Zeek/" itemprop="url" rel="index"><span itemprop="name">Zeek</span></a>
+        </span>
+    </span>
+
+  
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2022/11/21/zeekctl-soucre-code-analysis/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2022/11/21/zeekctl-soucre-code-analysis/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h1 id="deploy流程">deploy流程</h1>
+<h2 id="一.-check">一. check</h2>
+<ol type="1">
+<li>创建<code>&#123;prefix&#125;/spool/tmp/check-config-XXXXX</code>目录</li>
+<li>将install命令应生成的zeek脚本放入临时目录</li>
+<li>运行<code>check-config</code>脚本,启动所有node（不收包，跑完zeek脚本后正常退出）</li>
+<li>检查node的exitcode是否为0</li>
+</ol>
+<h2 id="二.-install">二. install</h2>
+<ol type="1">
+<li>删除以前安装的策略文件以避免混淆</li>
+<li>在<code>&#123;prefix&#125;/spool/installed-scripts-do-not-touch</code>下创建<code>size</code>和<code>auto</code>目录,分别存放站点策略和配置信息</li>
+<li>安装本地站点策略（将<code>&#123;prefix&#125;/share/zeek/site/local.zeek</code>拷贝到策略文件目录）</li>
+<li>创建包含集群布局的Zeek脚本<code>cluster-layout.zeek</code></li>
+<li>创建包含本地网络列表的Zeek脚本<code>local-networks.zeek</code></li>
+<li>创建包含zeekctl配置的Zeek脚本<code>zeekctl-config.zeek</code></li>
+<li>将logger节点的工作目录软连接到<code>&#123;prefix&#125;/logs/current</code></li>
+</ol>
+<a id="more"></a>
+<h2 id="三.-stop">三. stop</h2>
+<ol type="1">
+<li>检查节点是否意外崩溃，如果是则生成崩溃报告</li>
+<li>调用<code>stop</code>脚本对节点发送SIGTERM信号</li>
+<li>再次检查节点是否正常终止（默认timeout 60秒）</li>
+<li>如果还在运行，就使用SIGKILL信号，强行终止</li>
+<li>运行<code>post-terminate</code>脚本为节点进行清理任务</li>
+</ol>
+<p>Zeek终止后的清理任务： 1. 将节点的工作目录移动到tmp目录并创建新的工作目录。如果节点崩溃，则创建崩溃报告 2. 尝试归档所有日志（如果失败，则发送电子邮件），最后（如果节点没有崩溃），如果所有日志都成功归档，则删除tmp目录</p>
+<h2 id="四.-start">四. start</h2>
+<ol type="1">
+<li>忽略仍在运行的节点</li>
+<li>检查节点是否意外崩溃，如果是则生成崩溃报告</li>
+<li>创建节点工作目录<code>&#123;prefix&#125;/spool/XXXX</code></li>
+<li>运行<code>start</code>脚本启动节点</li>
+<li>检查进程是否确实启动了</li>
+</ol>
+<p><code>start</code>脚本： 1. 检查当前用户是否有工作进程读写权限 2. 不挂起并在后台运行<code>run-zeek</code>脚本启动zeek，并将标准输出和标准错误分别重定向到<code>stdout.log</code>和<code>stderr.log</code> 3. 循环等待<code>.pid</code>文件，获取Zeek的PID并回写给zeekctl</p>
+<p><code>run-zeek</code>脚本： 1. 使用<code>ulimit</code>命令解锁各种资源限制，并写入<code>stdout.log</code> 2. 将环境变量写入<code>.env_vars</code> 3. 将Zeek命令行写入<code>.cmdline</code> 4. 将当前时间写入<code>.startup</code> 5. 不挂起并在后台启动zeek，如果有pin_cpu就使用<code>taskset</code>命令设置亲和性 6. 将Zeek的PID写入<code>.pid</code> 7. 等待zeek进程</p>
+<h2 id="q-a">Q &amp; A</h2>
+<blockquote>
+<p>Q: 为啥check检查不到zeek监听端口冲突等问题？</p>
+<p>A: 因为<code>check-config</code>启动时会设置环境变量<code>ZEEKCTL_CHECK_CONFIG=1</code>,zeek不会在群集中建立节点之间通信，自然不会监听端口，也就不会引发异常</p>
+</blockquote>
+<h1 id="netstats流程">netstats流程</h1>
+<ol type="1">
+<li>zeekctl调用<code>_send_event_init</code>发送<code>Control::net_stats_request</code>事件</li>
+<li>worker节点触发<code>Control::net_stats_request</code>事件，计算出网络状态</li>
+<li>worker节点触发<code>Control::net_stats_response</code>事件，将消息传回zeekctl</li>
+<li>zeekctl调用<code>_send_event_wait</code>取到消息</li>
+</ol>
+<p><code>_send_event_init</code>实现细节： 1. 创建端点 2. 创建数据订阅者和状态订阅者 3. 建立连接 4. 等待连接建立（通过状态订阅者查看连接状态） 5. 构建Event并通过数据订阅者publish给Zeek</p>
+<h1 id="多个zeekctl之间如何竞争资源">多个zeekctl之间如何竞争资源？</h1>
+<h2 id="文件实现的多进程锁">文件实现的多进程锁</h2>
+<p>zeekctl使用函数装饰器让命令在执行前上锁，执行后解锁</p>
+<h2 id="上锁流程">上锁流程</h2>
+<ol type="1">
+<li>获取当前zeekctl的PID</li>
+<li>创建<code>&#123;prefix&#125;/spool/lock.XXXX</code>文件，并写入PID</li>
+<li>尝试将<code>lock.XXXX</code>硬链接到<code>lock</code></li>
+<li>对比链接前后inode链接数，判断是否链接成功</li>
+<li>如果链接成功，说明当前没有其他zeekctl进程上锁，成功上锁</li>
+<li>如果链接失败，说明当前已有其他zeekctl进程上锁，上锁失败</li>
+</ol>
+<h2 id="上锁失败后的流程">上锁失败后的流程</h2>
+<ul>
+<li>如果已上锁的进程存活，则等待30秒，每隔1秒尝试获取锁</li>
+<li>如果已上锁的进程已死亡，则直接删除锁文件</li>
+</ul>
+<h2 id="解锁流程">解锁流程</h2>
+<ul>
+<li>删除<code>lock</code>文件</li>
+</ul>
+<blockquote>
+<p>除了<code>config</code>、<code>nodes</code>、<code>exec</code>命令外，其他所有命令都会上锁</p>
+</blockquote>
+<h1 id="deploy后zeek集群如何建立">deploy后，Zeek集群如何建立？</h1>
+<blockquote>
+<p>以下脚本均位于<code>base/frameworks/cluster/</code>目录下</p>
+</blockquote>
+<ol type="1">
+<li>加载<code>main.zeek</code>：定义各种集群事件（如在其他节点成功连接上自己时，会发送hello事件给对方）、节点topic名、record类型定义</li>
+<li>加载<code>pools.zeek</code>：定义用于管理群集节点池的接口。使用pools可以方便的在集群内的节点之间分发工作或数据</li>
+<li>加载zeekctl在install阶段创建的包含集群布局的Zeek脚本<code>cluster-layout.zeek</code></li>
+<li>判断自己是否在集群里，如果在，就加载<code>setup-connections.zeek</code>脚本，将自己连接到集群</li>
+<li>根据自己的节点类型，加载不同的<code>./nodes/xxxx.zeek</code>脚本（如果集群中没有logger，那么manager也会加载logger的脚本，兼职logger）</li>
+<li>加载<code>broker-stores.zeek</code>：初始化分布式键值存储接口（可以数据持久化）</li>
+</ol>
+<h1 id="zeek集群的布局">Zeek集群的布局</h1>
+<ul>
+<li><p>每个worker都连接到所有proxy。</p></li>
+<li><p>所有节点连接到所有logger和manager。</p></li>
+</ul>
+<img data-src="/2022/11/21/zeekctl-soucre-code-analysis/cluster-layout.png" class="">
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>mAsk°
+  </li>
+  <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="https://zhaofupeng.com/2022/11/21/zeekctl-soucre-code-analysis/" title="ZeekCtl源码分析">https://zhaofupeng.com/2022/11/21/zeekctl-soucre-code-analysis/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/" rel="tag"># 源码分析</a>
+              <a href="/tags/Zeek/" rel="tag"># Zeek</a>
+              <a href="/tags/IDS/" rel="tag"># IDS</a>
+              <a href="/tags/%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8/" rel="tag"># 网络安全</a>
+              <a href="/tags/Python/" rel="tag"># Python</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/10/08/zeek-soucre-code-analysis-1/" rel="prev" title="Zeek源码分析（1）">
+                  <i class="fa fa-chevron-left"></i> Zeek源码分析（1）
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+<script>
+// remove Valine useless Elements
+window.onload = function(){
+  document.getElementsByClassName('vempty')[0].remove();
+  document.getElementsByClassName('vpower txt-right')[0].remove();
+}
+</script>
+
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank">苏ICP备20028272号-1</a>
+  </div>
+
+<div class="copyright">
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">mAsk°</span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="//unpkg.com/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="//unpkg.com/medium-zoom@1.0.6/dist/medium-zoom.min.js"></script>
+  <script src="//unpkg.com/lozad@1.16.0/dist/lozad.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  
+  <script>
+    (function(){
+      var bp = document.createElement('script');
+      var curProtocol = window.location.protocol.split(':')[0];
+      bp.src = (curProtocol === 'https') ? 'https://zz.bdstatic.com/linksubmit/push.js' : 'http://push.zhanzhang.baidu.com/push.js';
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(bp, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+  
+
+
+<script>
+NexT.utils.loadComments('#valine-comments', () => {
+  NexT.utils.getScript('//unpkg.com/valine@1.4.14/dist/Valine.min.js', () => {
+    new Valine(Object.assign({"enable":true,"appId":"0JXGpsLGBmQPLUT8YFuGIQtw-MdYXbMMI","appKey":"EBROXBRjuLRHB0N4N0E2rdzQ","placeholder":"欢迎畅所欲言~ (支持Markdown语法)","avatar":"mm","meta":["nick","mail"],"pageSize":10,"language":"zh-cn","visitor":false,"comment_count":false}, {
+      el: '#valine-comments',
+      path: "/2022/11/21/zeekctl-soucre-code-analysis/",
+      serverURLs: "https://0jxgpslg.api.lncldglobal.com"
+    }));
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
