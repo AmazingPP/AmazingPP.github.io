@@ -1056,52 +1056,6 @@
       </tags>
   </entry>
   <entry>
-    <title>一题引出C++内存管理和设计原则</title>
-    <url>/2021/01/15/mem-managerment-and-design-principles/</url>
-    <content><![CDATA[<h1 id="前言">前言</h1>
-<p>最近在刷LeetCode，昨天做到了这一题 <a href="https://leetcode-cn.com/problems/delete-node-in-a-linked-list/">237. 删除链表中的节点</a>，题目很简单，官方题解中，给出的Java代码如下 <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">deleteNode</span><span class="params">(ListNode node)</span> </span>&#123;</span><br><span class="line">    node.val = node.next.val;</span><br><span class="line">    node.next = node.next.next;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 作者：LeetCode</span></span><br><span class="line"><span class="comment">// 链接：https://leetcode-cn.com/problems/delete-node-in-a-linked-list/solution/shan-chu-lian-biao-zhong-de-jie-dian-by-leetcode/</span></span><br><span class="line"><span class="comment">// 来源：力扣（LeetCode）</span></span><br></pre></td></tr></table></figure> 可以看出，官方题解的思路是直接将自身<strong>替换</strong>成了下一个节点</p>
-<p>我平时使用C++来做题，但如果简单的将上述代码修改成C++就可能会导致严重的<strong>内存泄漏</strong>事故</p>
-<a id="more"></a>
-<h1 id="c内存释放">C++内存释放</h1>
-<p>大家都知道Java是有垃圾回收也就是GC的，所以上述代码在Java中是完全没有问题的，因为被替换掉的节点会由GC来释放</p>
-<p>而在C++中，每一个被<code>new</code>出来的<em>原生指针</em>(<em>Raw Pinter</em>)都必须使用<code>delete</code>释放，不释放会内存泄漏</p>
-<p>那我们直接写成下面这样</p>
-<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">deleteNode</span><span class="params">(ListNode* node)</span> </span>&#123;</span><br><span class="line">        ListNode* del = node-&gt;next;</span><br><span class="line">        node-&gt;val = node-&gt;next-&gt;val;</span><br><span class="line">        node-&gt;next = node-&gt;next-&gt;next;</span><br><span class="line">        <span class="keyword">delete</span> del;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-<p>可能到这里，大部分人就觉得OK了，万无一失了。</p>
-<p>但C++中的对象是分为<em>静态分配</em>和<em>动态分配</em>的</p>
-<p>确实在大部分情况下是没有问题了，但，<code>delete</code>只能用于释放堆指针，也就是<code>new</code>出来的指针，而不能用于栈指针。</p>
-<p>所以以下代码在VC++ Debug下会抛出<code>_CrtIsValidHeapPointer(block)</code>或<code>is_block_type_valid(header-&gt;block_use)</code>异常，因为C运行时检测到了你要<code>delete</code>的指针不是一个堆指针</p>
-<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    ListNode a(4), b(5), c(1), d(9);</span><br><span class="line">    a.next = &amp;b;</span><br><span class="line">    b.next = &amp;c;</span><br><span class="line">    c.next = &amp;d;</span><br><span class="line"></span><br><span class="line">    Solution solution;</span><br><span class="line">    solution.deleteNode(&amp;b);</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>当然有人要说了，这是个链表节点啊，谁会静态分配啊，静态分配不就没意义了嘛！</p>
-<p>但为了以防万一，还是需要使用设计来限制<code>NodeList</code>只能动态分配</p>
-<h1 id="只能动态分配">只能动态分配</h1>
-<p>简单来说，只需要将构造、析构函数设为<code>protected</code>属性，再将将动态分配的职责给到静态函数即可</p>
-<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ListNode</span> &#123;</span></span><br><span class="line"><span class="keyword">protected</span>:</span><br><span class="line">    ListNode(<span class="keyword">int</span> x) : val(x), next(<span class="literal">NULL</span>) &#123;&#125;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="keyword">int</span> val;</span><br><span class="line">    ListNode* next;</span><br><span class="line">    <span class="function"><span class="keyword">static</span> ListNode* <span class="title">create</span><span class="params">(<span class="keyword">int</span> x)</span> </span>&#123; <span class="keyword">return</span> <span class="keyword">new</span> ListNode(x); &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// ListNode a(4);  错误： 构造函数不可访问</span></span><br><span class="line">    ListNode* a = ListNode::create(<span class="number">4</span>);</span><br><span class="line">    ListNode* b = ListNode::create(<span class="number">5</span>);</span><br><span class="line">    ListNode* c = ListNode::create(<span class="number">1</span>);</span><br><span class="line">    ListNode* d = ListNode::create(<span class="number">9</span>);</span><br><span class="line"></span><br><span class="line">    a-&gt;next = b;</span><br><span class="line">    b-&gt;next = c;</span><br><span class="line">    c-&gt;next = d;</span><br><span class="line"></span><br><span class="line">    Solution solution;</span><br><span class="line">    solution.deleteNode(b);</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这样就可以保证<code>deleteNode</code>函数不会<code>delete</code>到栈指针了</p>
-<h1 id="设计原则">设计原则</h1>
-<h2 id="存在的错误">存在的错误</h2>
-<p>经过上面的改造，大部分人可能就觉得没有啥问题了。但官方给出的“<strong>删除</strong>”真的是删除吗？</p>
-<p>很显然这不是真正的删除了该删除的节点，而是将原节点修改了值。</p>
-<img data-src="/2021/01/15/mem-managerment-and-design-principles/debug.png" class="">
-<p>在Dbueg下看到，<code>deleteNode</code>函数从语义上看是删除了<code>b</code>节点，但实际上，<code>b</code>节点还存在，而<code>c</code>节点却被<code>delete</code>了。</p>
-<p>这就要引出另一个问题了，如果在<code>deleteNode</code>前在使用<code>c</code>节点本身，那就可能引发不确定行为。</p>
-<h2 id="对题目的反思">对题目的反思</h2>
-<p>由于<code>ListNode</code>是个单链表节点，而单链表节点本质上是无法做到在链表里删除自身的，所以这题只能通过这种替换的方式来伪造删除了节点。</p>
-<p>这题会误导很多开发者，这题的设计模式更是不可取！</p>
-<p>个人认为这题应该删除</p>
-<p>而<a href="https://leetcode-cn.com/problems/remove-linked-list-elements/">203. 移除链表元素</a>这题才是真正的移除链表元素！</p>
-]]></content>
-      <categories>
-        <category>C++</category>
-      </categories>
-      <tags>
-        <tag>C++</tag>
-        <tag>内存管理</tag>
-        <tag>设计原则</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>向量化异常处理（VEH） Hook</title>
     <url>/2021/05/28/veh-hook/</url>
     <content><![CDATA[<h1 id="前言">前言</h1>
@@ -1170,6 +1124,52 @@
         <tag>逆向</tag>
         <tag>Hook</tag>
         <tag>VEH</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>一题引出C++内存管理和设计原则</title>
+    <url>/2021/01/15/mem-managerment-and-design-principles/</url>
+    <content><![CDATA[<h1 id="前言">前言</h1>
+<p>最近在刷LeetCode，昨天做到了这一题 <a href="https://leetcode-cn.com/problems/delete-node-in-a-linked-list/">237. 删除链表中的节点</a>，题目很简单，官方题解中，给出的Java代码如下 <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">deleteNode</span><span class="params">(ListNode node)</span> </span>&#123;</span><br><span class="line">    node.val = node.next.val;</span><br><span class="line">    node.next = node.next.next;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 作者：LeetCode</span></span><br><span class="line"><span class="comment">// 链接：https://leetcode-cn.com/problems/delete-node-in-a-linked-list/solution/shan-chu-lian-biao-zhong-de-jie-dian-by-leetcode/</span></span><br><span class="line"><span class="comment">// 来源：力扣（LeetCode）</span></span><br></pre></td></tr></table></figure> 可以看出，官方题解的思路是直接将自身<strong>替换</strong>成了下一个节点</p>
+<p>我平时使用C++来做题，但如果简单的将上述代码修改成C++就可能会导致严重的<strong>内存泄漏</strong>事故</p>
+<a id="more"></a>
+<h1 id="c内存释放">C++内存释放</h1>
+<p>大家都知道Java是有垃圾回收也就是GC的，所以上述代码在Java中是完全没有问题的，因为被替换掉的节点会由GC来释放</p>
+<p>而在C++中，每一个被<code>new</code>出来的<em>原生指针</em>(<em>Raw Pinter</em>)都必须使用<code>delete</code>释放，不释放会内存泄漏</p>
+<p>那我们直接写成下面这样</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">deleteNode</span><span class="params">(ListNode* node)</span> </span>&#123;</span><br><span class="line">        ListNode* del = node-&gt;next;</span><br><span class="line">        node-&gt;val = node-&gt;next-&gt;val;</span><br><span class="line">        node-&gt;next = node-&gt;next-&gt;next;</span><br><span class="line">        <span class="keyword">delete</span> del;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>可能到这里，大部分人就觉得OK了，万无一失了。</p>
+<p>但C++中的对象是分为<em>静态分配</em>和<em>动态分配</em>的</p>
+<p>确实在大部分情况下是没有问题了，但，<code>delete</code>只能用于释放堆指针，也就是<code>new</code>出来的指针，而不能用于栈指针。</p>
+<p>所以以下代码在VC++ Debug下会抛出<code>_CrtIsValidHeapPointer(block)</code>或<code>is_block_type_valid(header-&gt;block_use)</code>异常，因为C运行时检测到了你要<code>delete</code>的指针不是一个堆指针</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    ListNode a(4), b(5), c(1), d(9);</span><br><span class="line">    a.next = &amp;b;</span><br><span class="line">    b.next = &amp;c;</span><br><span class="line">    c.next = &amp;d;</span><br><span class="line"></span><br><span class="line">    Solution solution;</span><br><span class="line">    solution.deleteNode(&amp;b);</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当然有人要说了，这是个链表节点啊，谁会静态分配啊，静态分配不就没意义了嘛！</p>
+<p>但为了以防万一，还是需要使用设计来限制<code>NodeList</code>只能动态分配</p>
+<h1 id="只能动态分配">只能动态分配</h1>
+<p>简单来说，只需要将构造、析构函数设为<code>protected</code>属性，再将将动态分配的职责给到静态函数即可</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ListNode</span> &#123;</span></span><br><span class="line"><span class="keyword">protected</span>:</span><br><span class="line">    ListNode(<span class="keyword">int</span> x) : val(x), next(<span class="literal">NULL</span>) &#123;&#125;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="keyword">int</span> val;</span><br><span class="line">    ListNode* next;</span><br><span class="line">    <span class="function"><span class="keyword">static</span> ListNode* <span class="title">create</span><span class="params">(<span class="keyword">int</span> x)</span> </span>&#123; <span class="keyword">return</span> <span class="keyword">new</span> ListNode(x); &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// ListNode a(4);  错误： 构造函数不可访问</span></span><br><span class="line">    ListNode* a = ListNode::create(<span class="number">4</span>);</span><br><span class="line">    ListNode* b = ListNode::create(<span class="number">5</span>);</span><br><span class="line">    ListNode* c = ListNode::create(<span class="number">1</span>);</span><br><span class="line">    ListNode* d = ListNode::create(<span class="number">9</span>);</span><br><span class="line"></span><br><span class="line">    a-&gt;next = b;</span><br><span class="line">    b-&gt;next = c;</span><br><span class="line">    c-&gt;next = d;</span><br><span class="line"></span><br><span class="line">    Solution solution;</span><br><span class="line">    solution.deleteNode(b);</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这样就可以保证<code>deleteNode</code>函数不会<code>delete</code>到栈指针了</p>
+<h1 id="设计原则">设计原则</h1>
+<h2 id="存在的错误">存在的错误</h2>
+<p>经过上面的改造，大部分人可能就觉得没有啥问题了。但官方给出的“<strong>删除</strong>”真的是删除吗？</p>
+<p>很显然这不是真正的删除了该删除的节点，而是将原节点修改了值。</p>
+<img data-src="/2021/01/15/mem-managerment-and-design-principles/debug.png" class="">
+<p>在Dbueg下看到，<code>deleteNode</code>函数从语义上看是删除了<code>b</code>节点，但实际上，<code>b</code>节点还存在，而<code>c</code>节点却被<code>delete</code>了。</p>
+<p>这就要引出另一个问题了，如果在<code>deleteNode</code>前在使用<code>c</code>节点本身，那就可能引发不确定行为。</p>
+<h2 id="对题目的反思">对题目的反思</h2>
+<p>由于<code>ListNode</code>是个单链表节点，而单链表节点本质上是无法做到在链表里删除自身的，所以这题只能通过这种替换的方式来伪造删除了节点。</p>
+<p>这题会误导很多开发者，这题的设计模式更是不可取！</p>
+<p>个人认为这题应该删除</p>
+<p>而<a href="https://leetcode-cn.com/problems/remove-linked-list-elements/">203. 移除链表元素</a>这题才是真正的移除链表元素！</p>
+]]></content>
+      <categories>
+        <category>C++</category>
+      </categories>
+      <tags>
+        <tag>C++</tag>
+        <tag>内存管理</tag>
+        <tag>设计原则</tag>
       </tags>
   </entry>
   <entry>
